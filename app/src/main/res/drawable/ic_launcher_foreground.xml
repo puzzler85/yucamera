@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 전체 스케일 축소 (중앙 기준) -->
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="0.88"
+        android:scaleY="0.88">
+
+        <!-- Camera body -->
+        <path
+            android:fillColor="#2D2D2D"
+            android:pathData="M26,31 L82,31 Q90,31 90,39 L90,73 Q90,81 82,81 L26,81 Q18,81 18,73 L18,39 Q18,31 26,31 Z" />
+
+        <!-- Viewfinder bump -->
+        <path
+            android:fillColor="#2D2D2D"
+            android:pathData="M42,23 L66,23 Q70,23 70,27 L70,31 L38,31 L38,27 Q38,23 42,23 Z" />
+
+        <!-- Lens outer -->
+        <path
+            android:fillColor="#1A1A1A"
+            android:pathData="M36,55 A18,18 0 1,0 72,55 A18,18 0 1,0 36,55 Z" />
+
+        <path
+            android:fillColor="#4A4A4A"
+            android:pathData="M40,55 A14,14 0 1,0 68,55 A14,14 0 1,0 40,55 Z" />
+
+        <path
+            android:fillColor="#787878"
+            android:pathData="M44,55 A10,10 0 1,0 64,55 A10,10 0 1,0 44,55 Z" />
+
+        <path
+            android:fillColor="#1A1A1A"
+            android:pathData="M48,55 A6,6 0 1,0 60,55 A6,6 0 1,0 48,55 Z" />
+
+        <path
+            android:fillColor="#CCCCCC"
+            android:pathData="M46,50 A3,3 0 1,0 52,50 A3,3 0 1,0 46,50 Z" />
+
+        <!-- Flash -->
+        <path
+            android:fillColor="#555555"
+            android:pathData="M24,37 L30,37 Q33,37 33,40 L33,44 Q33,47 30,47 L24,47 Q21,47 21,44 L21,40 Q21,37 24,37 Z" />
+
+        <!-- Y -->
+        <path
+            android:fillColor="#FF6600"
+            android:pathData="M69,68 L73,74 L72,74 L72,79 L76,79 L76,74 L75,74 L79,68 L77,66 L75,72 L73,72 L71,66 Z" />
+
+        <!-- u -->
+        <path
+            android:fillColor="#FF6600"
+            android:pathData="M80,66 L80,75 Q80,79 84.5,79 Q89,79 89,75 L89,66 L87,66 L87,75 Q87,77.5 84.5,77.5 Q82,77.5 82,75 L82,66 Z" />
+
+    </group>
+
+</vector>
