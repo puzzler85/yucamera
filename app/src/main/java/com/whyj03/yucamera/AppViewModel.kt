@@ -163,6 +163,22 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         _photos.update { it.filter { p -> p.file.absolutePath != photo.file.absolutePath } }
     }
 
+    fun deleteAllPhotos() {
+        val current = _photos.value
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            current.forEach { photo ->
+                context.contentResolver.delete(
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                    "${MediaStore.Images.Media.DATA} = ?",
+                    arrayOf(photo.file.absolutePath)
+                )
+            }
+        } else {
+            current.forEach { it.file.delete() }
+        }
+        _photos.value = emptyList()
+    }
+
     fun uploadPhoto(photo: PhotoItem) {
         val config = _nasConfig.value
         if (!config.isConfigured) {

@@ -19,9 +19,26 @@ fun GalleryScreen(viewModel: AppViewModel) {
     val photos by viewModel.photos.collectAsState()
     val snackMessage by viewModel.snackMessage.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    var showDeleteAllDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(snackMessage) {
         snackMessage?.let { snackbarHostState.showSnackbar(it) }
+    }
+
+    if (showDeleteAllDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteAllDialog = false },
+            title = { Text("전체 삭제") },
+            text = { Text("사진 ${photos.size}장을 모두 삭제하시겠습니까?") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.deleteAllPhotos(); showDeleteAllDialog = false }) {
+                    Text("삭제", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteAllDialog = false }) { Text("취소") }
+            }
+        )
     }
 
     Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
@@ -36,8 +53,18 @@ fun GalleryScreen(viewModel: AppViewModel) {
                     style = MaterialTheme.typography.titleMedium
                 )
                 if (photos.isNotEmpty()) {
-                    OutlinedButton(onClick = { viewModel.uploadAllPending() }) {
-                        Text("전체 업로드")
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(onClick = { viewModel.uploadAllPending() }) {
+                            Text("전체 업로드")
+                        }
+                        OutlinedButton(
+                            onClick = { showDeleteAllDialog = true },
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error
+                            )
+                        ) {
+                            Text("전체 삭제")
+                        }
                     }
                 }
             }
