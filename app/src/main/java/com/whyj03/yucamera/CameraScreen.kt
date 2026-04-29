@@ -5,27 +5,35 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import android.widget.Toast
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import java.io.File
+import kotlinx.coroutines.delay
 
 @Composable
 fun CameraScreen(viewModel: AppViewModel) {
@@ -76,12 +84,59 @@ fun CameraScreen(viewModel: AppViewModel) {
     var showDialog by remember { mutableStateOf(false) }
     var tempFile by remember { mutableStateOf<File?>(null) }
     var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
+    var camera by remember { mutableStateOf<Camera?>(null) }
+    var zoomRatio by remember { mutableStateOf(1f) }
+    var showZoomIndicator by remember { mutableStateOf(false) }
 
-    Box(Modifier.fillMaxSize()) {
+    LaunchedEffect(showZoomIndicator) {
+        if (showZoomIndicator) {
+            delay(1500)
+            showZoomIndicator = false
+        }
+    }
+
+    Box(
+        Modifier
+            .fillMaxSize()
+            .pointerInput(camera) {
+                detectTransformGestures { _, _, zoomChange, _ ->
+                    val cam = camera ?: return@detectTransformGestures
+                    val zoomState = cam.cameraInfo.zoomState.value ?: return@detectTransformGestures
+                    val newRatio = (zoomState.zoomRatio * zoomChange)
+                        .coerceIn(zoomState.minZoomRatio, zoomState.maxZoomRatio)
+                    cam.cameraControl.setZoomRatio(newRatio)
+                    zoomRatio = newRatio
+                    showZoomIndicator = true
+                }
+            }
+    ) {
         CameraPreview(
             modifier = Modifier.fillMaxSize(),
-            onImageCaptureReady = { imageCapture = it }
+            onCameraReady = { capture, cam ->
+                imageCapture = capture
+                camera = cam
+            }
         )
+
+        // Zoom indicator
+        AnimatedVisibility(
+            visible = showZoomIndicator,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.align(Alignment.TopCenter).padding(top = 24.dp)
+        ) {
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = Color.Black.copy(alpha = 0.55f)
+            ) {
+                Text(
+                    text = "%.1fx".format(zoomRatio),
+                    color = Color.White,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                )
+            }
+        }
 
         // Shutter button
         Box(
@@ -132,7 +187,10 @@ fun CameraScreen(viewModel: AppViewModel) {
 }
 
 @Composable
-private fun CameraPreview(modifier: Modifier = Modifier, onImageCaptureReady: (ImageCapture) -> Unit) {
+private fun CameraPreview(
+    modifier: Modifier = Modifier,
+    onCameraReady: (ImageCapture, Camera) -> Unit
+) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val previewView = remember { PreviewView(context) }
@@ -145,9 +203,9 @@ private fun CameraPreview(modifier: Modifier = Modifier, onImageCaptureReady: (I
             val capture = ImageCapture.Builder()
                 .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
                 .build()
-            onImageCaptureReady(capture)
             provider.unbindAll()
-            provider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, capture)
+            val cam = provider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, capture)
+            onCameraReady(capture, cam)
         }, ContextCompat.getMainExecutor(context))
     }
 
