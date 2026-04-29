@@ -2,6 +2,7 @@ package com.whyj03.yucamera
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
@@ -29,24 +30,42 @@ import java.io.File
 @Composable
 fun CameraScreen(viewModel: AppViewModel) {
     val context = LocalContext.current
-    var hasPermission by remember {
-        mutableStateOf(
-            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
-        )
+    fun checkAllPermissions(): Boolean {
+        val cameraOk = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+        val storageOk = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+        return cameraOk && storageOk
     }
-    val permLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-        hasPermission = it
+    var hasPermission by remember { mutableStateOf(checkAllPermissions()) }
+    val permLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
+        hasPermission = results[Manifest.permission.CAMERA] == true &&
+            (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ||
+             results[Manifest.permission.WRITE_EXTERNAL_STORAGE] == true)
     }
 
     LaunchedEffect(Unit) {
-        if (!hasPermission) permLauncher.launch(Manifest.permission.CAMERA)
+        if (!hasPermission) {
+            val perms = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                arrayOf(Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            } else {
+                arrayOf(Manifest.permission.CAMERA)
+            }
+            permLauncher.launch(perms)
+        }
     }
 
     if (!hasPermission) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text("카메라 권한이 필요합니다", style = MaterialTheme.typography.bodyLarge)
-                Button(onClick = { permLauncher.launch(Manifest.permission.CAMERA) }) {
+                Button(onClick = {
+                    val perms = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                        arrayOf(Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    } else {
+                        arrayOf(Manifest.permission.CAMERA)
+                    }
+                    permLauncher.launch(perms)
+                }) {
                     Text("권한 허용")
                 }
             }

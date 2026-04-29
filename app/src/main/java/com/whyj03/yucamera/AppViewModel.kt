@@ -1,6 +1,10 @@
 package com.whyj03.yucamera
 
 import android.app.Application
+import android.content.ContentValues
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -40,13 +44,37 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun loadExistingPhotos() {
-        val files = getPhotoDir().listFiles { f -> f.extension.lowercase() == "jpg" } ?: return
-        _photos.value = files.sortedByDescending { it.lastModified() }
-            .map { PhotoItem(it, it.nameWithoutExtension) }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val projection = arrayOf(
+                MediaStore.Images.Media.DATA,
+                MediaStore.Images.Media.DISPLAY_NAME,
+                MediaStore.Images.Media.DATE_MODIFIED
+            )
+            val selection = "${MediaStore.Images.Media.RELATIVE_PATH} = ?"
+            context.contentResolver.query(
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                projection, selection, arrayOf("Pictures/yucamera/"),
+                "${MediaStore.Images.Media.DATE_MODIFIED} DESC"
+            )?.use { cursor ->
+                val dataCol = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
+                val nameCol = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME)
+                val list = mutableListOf<PhotoItem>()
+                while (cursor.moveToNext()) {
+                    val path = cursor.getString(dataCol)
+                    val displayName = cursor.getString(nameCol).removeSuffix(".jpg")
+                    list.add(PhotoItem(File(path), displayName))
+                }
+                _photos.value = list
+            }
+        } else {
+            val files = getPhotoDir().listFiles { f -> f.extension.lowercase() == "jpg" } ?: return
+            _photos.value = files.sortedByDescending { it.lastModified() }
+                .map { PhotoItem(it, it.nameWithoutExtension) }
+        }
     }
 
     fun getPhotoDir(): File {
-        val dir = File(context.filesDir, "photos")
+        val dir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "yucamera")
         if (!dir.exists()) dir.mkdirs()
         return dir
     }
@@ -55,15 +83,44 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val safeName = name.trim().ifBlank {
             SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
         }
-        val dest = File(getPhotoDir(), "$safeName.jpg")
-        tempFile.copyTo(dest, overwrite = true)
+        val destFile: File
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val contentValues = ContentValues().apply {
+                put(MediaStore.Images.Media.DISPLAY_NAME, "$safeName.jpg")
+                put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+                put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/yucamera/")
+            }
+            val uri = context.contentResolver.insert(
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues
+            ) ?: throw IllegalStateException("MediaStore 저장 실패")
+            context.contentResolver.openOutputStream(uri)?.use { os ->
+                tempFile.inputStream().use { it.copyTo(os) }
+            }
+            destFile = context.contentResolver.query(
+                uri, arrayOf(MediaStore.Images.Media.DATA), null, null, null
+            )?.use { cursor ->
+                cursor.moveToFirst()
+                File(cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)))
+            } ?: File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "yucamera/$safeName.jpg")
+        } else {
+            destFile = File(getPhotoDir(), "$safeName.jpg")
+            tempFile.copyTo(destFile, overwrite = true)
+        }
         tempFile.delete()
-        _photos.update { listOf(PhotoItem(dest, safeName)) + it }
+        _photos.update { listOf(PhotoItem(destFile, safeName)) + it }
         return "$safeName.jpg"
     }
 
     fun deletePhoto(photo: PhotoItem) {
-        photo.file.delete()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            context.contentResolver.delete(
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                "${MediaStore.Images.Media.DATA} = ?",
+                arrayOf(photo.file.absolutePath)
+            )
+        } else {
+            photo.file.delete()
+        }
         _photos.update { it.filter { p -> p.file.absolutePath != photo.file.absolutePath } }
     }
 
