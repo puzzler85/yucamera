@@ -1,6 +1,7 @@
 package com.whyj03.yucamera
 
 import android.content.Context
+import androidx.core.content.edit
 
 object PrefixPrefs {
     private const val PREF_NAME = "photo_prefix_prefs"
@@ -13,7 +14,7 @@ object PrefixPrefs {
 
     fun savePrefix(context: Context, prefix: String) =
         context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
-            .edit().putString(KEY_PREFIX, prefix).apply()
+            .edit { putString(KEY_PREFIX, prefix) }
 
     fun loadCounter(context: Context): Int =
         context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
@@ -21,5 +22,5 @@ object PrefixPrefs {
 
     fun saveCounter(context: Context, counter: Int) =
         context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
-            .edit().putInt(KEY_COUNTER, counter).apply()
+            .edit { putInt(KEY_COUNTER, counter) }
 }
