@@ -3,6 +3,10 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+// 버전업 시 아래 값들을 1씩 올린다
+val appVersionCode = 104
+val appVersionName = "1.0.4"
+
 android {
     namespace = "com.whyj03.yucamera"
     compileSdk {
@@ -15,8 +19,8 @@ android {
         applicationId = "com.whyj03.yucamera"
         minSdk = 27
         targetSdk = 36
-        versionCode = 104
-        versionName = "1.0.4"
+        versionCode = appVersionCode
+        versionName = appVersionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -29,6 +33,7 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -45,6 +50,17 @@ android {
             excludes += "META-INF/DEPENDENCIES"
             excludes += "META-INF/*.kotlin_module"
             excludes += "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
+        }
+    }
+}
+
+afterEvaluate {
+    tasks.named("assembleRelease") {
+        doLast {
+            val apkDir = File(project.projectDir, "release")
+            apkDir.listFiles { f -> f.extension == "apk" }?.forEach { apk ->
+                apk.copyTo(File(apkDir, "YuCamera_v${appVersionName}.apk"), overwrite = true)
+            }
         }
     }
 }
@@ -74,6 +90,9 @@ dependencies {
 
     // Navigation
     implementation(libs.navigation.compose)
+
+    // Lifecycle
+    implementation(libs.lifecycle.runtime.compose)
 
     // ViewModel
     implementation(libs.lifecycle.viewmodel.compose)
