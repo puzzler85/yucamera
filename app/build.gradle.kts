@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
-// 버전업 시 아래 값들을 1씩 올린다
+// 버전업 시 아래 값들(Code, Name)을 1씩 올린다
 val appVersionCode = 105
 val appVersionName = "1.0.5"
 
@@ -54,16 +54,17 @@ android {
     }
 }
 
-afterEvaluate {
-    tasks.named("assembleRelease") {
-        doLast {
-            val apkDir = File(project.projectDir, "release")
-            apkDir.listFiles { f -> f.extension == "apk" }?.forEach { apk ->
-                apk.copyTo(File(apkDir, "YuCamera_v${appVersionName}.apk"), overwrite = true)
-            }
-        }
-    }
-}
+// generate signed app bundle or apk 사용 시 파일명 관련 설정
+//afterEvaluate {
+//    tasks.named("assembleRelease") {
+//        doLast {
+//            val apkDir = File(project.projectDir, "release")
+//            apkDir.listFiles { f -> f.extension == "apk" }?.forEach { apk ->
+//                apk.copyTo(File(apkDir, "YuCamera_v${appVersionName}.apk"), overwrite = true)
+//            }
+//        }
+//    }
+//}
 
 dependencies {
     implementation(libs.androidx.core.ktx)
