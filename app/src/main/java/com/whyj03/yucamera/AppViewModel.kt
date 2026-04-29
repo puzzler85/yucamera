@@ -39,6 +39,22 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val _snackMessage = MutableStateFlow<String?>(null)
     val snackMessage: StateFlow<String?> = _snackMessage.asStateFlow()
 
+    private val _photoPrefix = MutableStateFlow(PrefixPrefs.loadPrefix(context))
+    val photoPrefix: StateFlow<String> = _photoPrefix.asStateFlow()
+
+    private val _prefixCounter = MutableStateFlow(PrefixPrefs.loadCounter(context))
+    val prefixCounter: StateFlow<Int> = _prefixCounter.asStateFlow()
+
+    fun updatePhotoPrefix(prefix: String) {
+        val trimmed = prefix.trim()
+        if (trimmed != _photoPrefix.value) {
+            _prefixCounter.value = 1
+            PrefixPrefs.saveCounter(context, 1)
+        }
+        _photoPrefix.value = trimmed
+        PrefixPrefs.savePrefix(context, trimmed)
+    }
+
     init {
         loadExistingPhotos()
     }
@@ -80,8 +96,18 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun onPhotoCaptured(tempFile: File, name: String): String {
-        val safeName = name.trim().ifBlank {
-            SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val prefix = _photoPrefix.value
+        val safeName = when {
+            name.isNotBlank() -> name.trim()
+            prefix.isNotBlank() -> {
+                val counter = _prefixCounter.value
+                val generated = "${prefix}_${counter.toString().padStart(4, '0')}"
+                val next = counter + 1
+                _prefixCounter.value = next
+                PrefixPrefs.saveCounter(context, next)
+                generated
+            }
+            else -> SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
         }
         val destFile: File
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {

@@ -85,6 +85,8 @@ fun CameraScreen(viewModel: AppViewModel) {
     var tempFile by remember { mutableStateOf<File?>(null) }
     var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
     var camera by remember { mutableStateOf<Camera?>(null) }
+    val photoPrefix by viewModel.photoPrefix.collectAsState()
+    val prefixCounter by viewModel.prefixCounter.collectAsState()
     var zoomRatio by remember { mutableStateOf(1f) }
     var showZoomIndicator by remember { mutableStateOf(false) }
 
@@ -171,6 +173,9 @@ fun CameraScreen(viewModel: AppViewModel) {
 
     if (showDialog) {
         PhotoNameDialog(
+            prefix = photoPrefix,
+            prefixCounter = prefixCounter,
+            onPrefixChange = { viewModel.updatePhotoPrefix(it) },
             onConfirm = { name ->
                 val savedName = tempFile?.let { viewModel.onPhotoCaptured(it, name) }
                 if (savedName != null) {
