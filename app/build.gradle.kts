@@ -4,8 +4,8 @@ plugins {
 }
 
 // 버전업 시 아래 값들을 1씩 올린다
-val appVersionCode = 104
-val appVersionName = "1.0.4"
+val appVersionCode = 105
+val appVersionName = "1.0.5"
 
 android {
     namespace = "com.whyj03.yucamera"
