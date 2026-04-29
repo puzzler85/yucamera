@@ -158,7 +158,9 @@ fun CameraScreen(viewModel: AppViewModel) {
                                 tempFile = tmp
                                 showDialog = true
                             }
-                            override fun onError(e: ImageCaptureException) {}
+                            override fun onError(e: ImageCaptureException) {
+                                Toast.makeText(context, "촬영 실패: ${e.message}", Toast.LENGTH_SHORT).show()
+                            }
                         }
                     )
                 },
@@ -177,10 +179,7 @@ fun CameraScreen(viewModel: AppViewModel) {
             prefixCounter = prefixCounter,
             onPrefixChange = { viewModel.updatePhotoPrefix(it) },
             onConfirm = { name ->
-                val savedName = tempFile?.let { viewModel.onPhotoCaptured(it, name) }
-                if (savedName != null) {
-                    Toast.makeText(context, "$savedName 저장 완료", Toast.LENGTH_SHORT).show()
-                }
+                tempFile?.let { viewModel.onPhotoCaptured(it, name) }
                 showDialog = false
             },
             onDismiss = {

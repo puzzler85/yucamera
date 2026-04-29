@@ -1,6 +1,7 @@
 package com.whyj03.yucamera
 
 import android.content.Context
+import androidx.core.content.edit
 
 data class NasConfig(
     val host: String = "",
@@ -17,14 +18,13 @@ object NasConfigPrefs {
     private const val PREFS_NAME = "nas_config"
 
     fun save(context: Context, config: NasConfig) {
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().apply {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit {
             putString("host", config.host)
             putInt("port", config.port)
             putString("username", config.username)
             putString("password", config.password)
             putString("shareName", config.shareName)
             putString("remotePath", config.remotePath)
-            apply()
         }
     }
 
